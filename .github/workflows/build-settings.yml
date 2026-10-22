@@ -1,4 +1,4 @@
-name: Build Real Data reg.dat
+name: Build Optimize Settings File
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  build-reg:
+  build-settings:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -20,13 +20,13 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Generate reg.dat
+      - name: Generate optimize.settings
         run: |
-          python scripts/generate_reg.py
-          echo "=== Dung lượng file ==="
-          ls -lh output/reg.dat
-          echo "=== Kiểm tra 16 bytes đầu ==="
-          xxd -l 16 output/reg.dat
+          python scripts/generate_settings.py
+          echo "=== Kiểm tra file ==="
+          ls -lh output/optimize.settings
+          echo "=== 16 bytes đầu (đã mã hóa) ==="
+          xxd -l 16 output/optimize.settings
 
       - name: Commit & Push
         run: |
@@ -36,6 +36,13 @@ jobs:
           if git diff --staged --quiet; then
             echo "Không có thay đổi."
           else
-            git commit -m "Auto-Build: Cập nhật reg.dat (Real Data) [Skip CI]"
+            git commit -m "Auto-Build: Cập nhật optimize.settings (Obfuscated) [Skip CI]"
             git push
           fi
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: optimize-settings
+          path: output/
+          retention-days: 30
