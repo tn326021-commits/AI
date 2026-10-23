@@ -1,4 +1,4 @@
-name: Build Optimize Settings File
+name: Build AimLock.dat (Ultra)
 
 on:
   push:
@@ -9,40 +9,29 @@ permissions:
   contents: write
 
 jobs:
-  build-settings:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
-      - name: Generate optimize.settings
+      - name: Generate AimLock.dat
         run: |
-          python scripts/generate_settings.py
-          echo "=== Kiểm tra file ==="
-          ls -lh output/optimize.settings
-          echo "=== 16 bytes đầu (đã mã hóa) ==="
-          xxd -l 16 output/optimize.settings
-
+          python scripts/generate_aimlock.py
+          ls -lh output/AimLock.dat
+          xxd -l 16 output/AimLock.dat
       - name: Commit & Push
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add output/
-          if git diff --staged --quiet; then
-            echo "Không có thay đổi."
-          else
-            git commit -m "Auto-Build: Cập nhật optimize.settings (Obfuscated) [Skip CI]"
-            git push
-          fi
-
+          if git diff --staged --quiet; then echo "No changes."; else git commit -m "Auto-Build: AimLock.dat (Ultra) [Skip CI]"; git push; fi
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: optimize-settings
+          name: aimlock-dat
           path: output/
           retention-days: 30
