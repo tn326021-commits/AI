@@ -1,4 +1,4 @@
-name: Build AimLock.dat (Ultra)
+name: Build AimLock.bytes (Vivo U10)
 
 on:
   push:
@@ -18,20 +18,20 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Generate AimLock.dat
+      - name: Generate AimLock.bytes
         run: |
-          python scripts/generate_aimlock.py
-          ls -lh output/AimLock.dat
-          xxd -l 16 output/AimLock.dat
+          python scripts/generate_bytes.py
+          ls -lh output/AimLock.bytes
+          xxd -l 16 output/AimLock.bytes
       - name: Commit & Push
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add output/
-          if git diff --staged --quiet; then echo "No changes."; else git commit -m "Auto-Build: AimLock.dat (Ultra) [Skip CI]"; git push; fi
+          if git diff --staged --quiet; then echo "No changes."; else git commit -m "Auto-Build: AimLock.bytes (Vivo U10) [Skip CI]"; git push; fi
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: aimlock-dat
+          name: aimlock-bytes
           path: output/
           retention-days: 30
