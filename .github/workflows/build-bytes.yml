@@ -122,40 +122,34 @@ jobs:
         cp bin/Release/*/AimAssistProject.dll ../../AimAssistAssembly.dll
         cd ../..
 
-    # BƯỚC 2: TẠO FILE ASSETBUNDLE TRỐNG HỢP LỆ VÀ NHÉT CODE VÀO
+    # BƯỚC 2: TẢI FILE BUNDLE TRỐNG CHUẨN VÀ NHÉT CODE VÀO
     - name: Create AssetBundle (.asset)
       run: |
         mkdir -p output
+        
+        # Tải một file bundle rỗng được tạo bởi Unity từ GitHub của một dự án mã nguồn mở
+        echo "[*] Đang tải file bundle trống chuẩn..."
+        curl -L -o empty.bundle "https://github.com/4sval/FModel/raw/master/FModel/Resources/empty.bundle"
         
         cat << 'EOF' > create_asset.py
         import UnityPy
         from UnityPy.classes import TextAsset
         import os
-        import struct
 
+        TEMPLATE = "empty.bundle"
         DLL = "AimAssistAssembly.dll"
         OUT = "output/aimmenu_bundle.asset"
-        TEMP_EMPTY = "temp_empty.bundle"
 
-        if not os.path.exists(DLL):
-            print(f"Lỗi: Không tìm thấy {DLL}")
+        if not os.path.exists(TEMPLATE):
+            print(f"Lỗi: Không tìm thấy file bundle trống.")
             exit(1)
-
-        # Tạo một file UnityFS Header trống hợp lệ (Magic bytes)
-        # File này chứa Header của UnityFS nhưng không có dữ liệu
-        print("[*] Đang tạo file Bundle trống...")
-        with open(TEMP_EMPTY, "wb") as f:
-            # UnityFS magic, version 6, unity version 2019.4.0f1
-            f.write(b'UnityFS\x00\x00\x00\x00\x06\x00\x00\x00\x35\x2e\x36\x2e\x36\x66\x31\x00')
-            # Kích thước file (giả lập)
-            f.write(b'\x00\x00\x00\x00\x00\x00\x00\x00')
 
         with open(DLL, "rb") as f:
             dll_data = f.read()
 
         try:
             print("[*] Đang mở bundle trống...")
-            env = UnityPy.load(TEMP_EMPTY)
+            env = UnityPy.load(TEMPLATE)
             
             # Thêm TextAsset chứa code
             asset = TextAsset(m_Name="AimMenuCode", m_Script=dll_data.decode("utf-8", "surrogateescape"))
@@ -176,9 +170,6 @@ jobs:
         except Exception as e:
             print(f"[X] Lỗi khi tạo bundle: {e}")
             exit(1)
-        finally:
-            if os.path.exists(TEMP_EMPTY):
-                os.remove(TEMP_EMPTY)
         EOF
         
         python create_asset.py
