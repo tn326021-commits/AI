@@ -122,39 +122,46 @@ jobs:
         cp bin/Release/*/AimAssistProject.dll ../../AimAssistAssembly.dll
         cd ../..
 
-    # BƯỚC 2: TẢI FILE BUNDLE TRỐNG CHUẨN VÀ NHÉT DLL VÀO
+    # BƯỚC 2: TẠO FILE ASSET TỪ DLL (SỬ DỤNG HEADER GIẢ LẬP)
     - name: Create AssetBundle (.asset)
       run: |
         mkdir -p output
         
-        # Tải file AssetBundle trống được tạo bởi Unity 2021 (đã kiểm tra hợp lệ)
-        echo "[*] Đang tải file bundle trống chuẩn..."
-        curl -L -o empty.bundle "https://github.com/AssetRipper/AssetRipper/raw/master/TestInputs/empty_bundle"
-        
         cat << 'EOF' > create_asset.py
+        import os
         import UnityPy
         from UnityPy.classes import TextAsset
-        import os
 
-        TEMPLATE = "empty.bundle"
         DLL = "AimAssistAssembly.dll"
         OUT = "output/aimmenu_bundle.asset"
+        TEMP_BUNDLE = "temp_created.bundle"
 
-        if not os.path.exists(TEMPLATE):
-            print(f"Lỗi: Không tìm thấy file bundle trống.")
+        if not os.path.exists(DLL):
+            print(f"Lỗi: Không tìm thấy {DLL}")
             exit(1)
 
         with open(DLL, "rb") as f:
             dll_data = f.read()
 
+        print("[*] Đang tạo file AssetBundle bằng mã Hex chuẩn...")
+        # Tạo một file UnityFS Header giả lập (Phiên bản 6, Unity 2019.4)
+        # Header này đủ để UnityPy nhận diện, sau đó nó sẽ tự động tạo SerializedFile
+        header = b'UnityFS\x00\x00\x00\x00\x06\x00\x00\x00\x35\x2e\x36\x2e\x36\x66\x31\x00'
+        # Kích thước file (giả lập 0)
+        header += b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        
+        with open(TEMP_BUNDLE, "wb") as f:
+            f.write(header)
+
         try:
-            print("[*] Đang mở bundle trống...")
-            env = UnityPy.load(TEMPLATE)
+            print("[*] Đang mở bundle vừa tạo...")
+            env = UnityPy.load(TEMP_BUNDLE)
             
-            # Tạo TextAsset chứa code
+            print("[*] Đang thêm TextAsset...")
+            # Tạo TextAsset chứa DLL
             asset = TextAsset(m_Name="AimMenuCode", m_Script=dll_data.decode("utf-8", "surrogateescape"))
             
-            # Duyệt và thêm vào file object đầu tiên có thuộc tính 'assets'
+            # Tìm file object và nhét asset vào
             added = False
             for file_obj in env.files.values():
                 if hasattr(file_obj, 'assets'):
@@ -162,17 +169,21 @@ jobs:
                     added = True
                     break
             
+            # Nếu không tìm thấy, ta tạo mới một file object (SerializedFile) bên trong
             if not added:
-                print("Lỗi: Không tìm thấy file object để nhét asset.")
-                exit(1)
-
+                print("[*] Không tìm thấy object, đang tạo SerializedFile mới...")
+                from UnityPy.files import SerializedFile
+                new_file = SerializedFile()
+                new_file.assets.append(asset)
+                env.files["temp"] = new_file
+            
             # Lưu file
             with open(OUT, "wb") as f:
                 f.write(env.file.save())
                 
             print(f"[OK] Đã tạo thành công: {OUT}")
         except Exception as e:
-            print(f"[X] Lỗi khi tạo bundle: {e}")
+            print(f"[X] Lỗi: {e}")
             exit(1)
         EOF
         
