@@ -6,7 +6,6 @@ namespace AimAssistMod
 {
     public class AimAssistMenu : MonoBehaviour
     {
-        // --- BIẾN CẤU HÌNH MENU ---
         public static bool EnableAimLock = true;
         public static bool AimHeadNeck = false; 
         public static bool AntiBan = true;
@@ -35,7 +34,6 @@ namespace AimAssistMod
 
         void Update()
         {
-            // 1. NHẤP 4 LẦN MỞ MENU
             if (Input.GetMouseButtonDown(0))
             {
                 if (Time.time - _lastTapTime > 0.5f) _tapCount = 0;
@@ -44,7 +42,6 @@ namespace AimAssistMod
                 if (_tapCount >= 4) { _showMenu = !_showMenu; _tapCount = 0; }
             }
 
-            // 2. LOGIC AIM
             if (!EnableAimLock || !Input.GetMouseButton(1)) return;
             if (_mainCam == null) _mainCam = Camera.main;
             if (_playerTransform == null) return;
@@ -102,7 +99,6 @@ namespace AimAssistMod
 
         void InitStyles()
         {
-            // Tạo Texture nền
             _bgTexture = new Texture2D(1, 1);
             _bgTexture.SetPixel(0, 0, new Color(0.1f, 0.1f, 0.1f, 0.95f));
             _bgTexture.Apply();
@@ -147,24 +143,24 @@ namespace AimAssistMod
 
             GUILayout.Space(50);
 
-            EnableAimLock = GUILayout.Toggle(EnableAimLock, " Bật AimLock (Hitbox x3)", _toggleStyle);
+            EnableAimLock = GUILayout.Toggle(EnableAimLock, " Enable AimLock (Hitbox x3)", _toggleStyle);
             GUILayout.Space(10);
-            AimHeadNeck = GUILayout.Toggle(AimHeadNeck, " Aim Đầu + Cổ (Bone)", _toggleStyle);
+            AimHeadNeck = GUILayout.Toggle(AimHeadNeck, " Aim Head + Neck (Bone)", _toggleStyle);
             GUILayout.Space(10);
-            AntiBan = GUILayout.Toggle(AntiBan, " Anti-Ban (Chặn Report)", _toggleStyle);
+            AntiBan = GUILayout.Toggle(AntiBan, " Anti-Ban (Block Report)", _toggleStyle);
             GUILayout.Space(10);
-            StealthMode = GUILayout.Toggle(StealthMode, " Chế độ Tàng Hình", _toggleStyle);
+            StealthMode = GUILayout.Toggle(StealthMode, " Stealth Mode", _toggleStyle);
             GUILayout.Space(20);
 
             GUILayout.Label($"Hitbox: {HitboxSize:F2}m", _labelStyle);
             HitboxSize = GUILayout.HorizontalSlider(HitboxSize, 0.5f, 3.0f);
             GUILayout.Space(10);
 
-            GUILayout.Label($"Độ mượt: {AimSmooth:F1}", _labelStyle);
+            GUILayout.Label($"Smooth: {AimSmooth:F1}", _labelStyle);
             AimSmooth = GUILayout.HorizontalSlider(AimSmooth, 5f, 80f);
             GUILayout.Space(25);
 
-            if (GUILayout.Button("ĐÓNG MENU", _buttonStyle)) _showMenu = false;
+            if (GUILayout.Button("CLOSE MENU", _buttonStyle)) _showMenu = false;
             GUI.DragWindow(new Rect(0, 0, _menuRect.width, 40));
         }
 
@@ -224,7 +220,6 @@ namespace AimAssistMod
         }
     }
 
-    // --- CLASS CHẶN BÁO CÁO ---
     public class KillCamPatch
     {
         [IFix.Patch]
