@@ -30,7 +30,7 @@ jobs:
       run: |
         pip install UnityPy
 
-    # BƯỚC 1: TỰ ĐỘNG TẠO CODE C# VÀ BIÊN DỊCH
+    # BƯỚC 1: TẠO VÀ BIÊN DỊCH CODE C#
     - name: Generate and Compile C# to DLL
       run: |
         mkdir -p temp_build
@@ -122,7 +122,7 @@ jobs:
         cp bin/Release/*/AimAssistProject.dll ../../AimAssistAssembly.dll
         cd ../..
 
-    # BƯỚC 2: TỰ ĐỘNG TẠO FILE .ASSET (BUNDLE) TỪ CON SỐ 0
+    # BƯỚC 2: TẠO FILE ASSETBUNDLE TRỐNG HỢP LỆ VÀ NHÉT CODE VÀO
     - name: Create AssetBundle (.asset)
       run: |
         mkdir -p output
@@ -130,45 +130,60 @@ jobs:
         cat << 'EOF' > create_asset.py
         import UnityPy
         from UnityPy.classes import TextAsset
-        from UnityPy.files import SerializedFile
         import os
+        import struct
 
         DLL = "AimAssistAssembly.dll"
         OUT = "output/aimmenu_bundle.asset"
+        TEMP_EMPTY = "temp_empty.bundle"
 
         if not os.path.exists(DLL):
             print(f"Lỗi: Không tìm thấy {DLL}")
             exit(1)
 
+        # Tạo một file UnityFS Header trống hợp lệ (Magic bytes)
+        # File này chứa Header của UnityFS nhưng không có dữ liệu
+        print("[*] Đang tạo file Bundle trống...")
+        with open(TEMP_EMPTY, "wb") as f:
+            # UnityFS magic, version 6, unity version 2019.4.0f1
+            f.write(b'UnityFS\x00\x00\x00\x00\x06\x00\x00\x00\x35\x2e\x36\x2e\x36\x66\x31\x00')
+            # Kích thước file (giả lập)
+            f.write(b'\x00\x00\x00\x00\x00\x00\x00\x00')
+
         with open(DLL, "rb") as f:
             dll_data = f.read()
 
         try:
-            print("[*] Đang tạo AssetBundle trống...")
+            print("[*] Đang mở bundle trống...")
+            env = UnityPy.load(TEMP_EMPTY)
             
-            # Tạo một SerializedFile mới (định dạng gốc của Unity)
-            new_file = SerializedFile()
-            
-            # Tạo TextAsset chứa code DLL
+            # Thêm TextAsset chứa code
             asset = TextAsset(m_Name="AimMenuCode", m_Script=dll_data.decode("utf-8", "surrogateescape"))
             
-            # Thêm asset vào file
-            new_file.assets.append(asset)
-            
-            # Đóng gói thành file AssetBundle
-            # Lưu ý: UnityPy sẽ tự động tạo Header UnityFS cho nó
+            if env.files:
+                for file_obj in env.files.values():
+                    file_obj.assets.append(asset)
+                    break
+            else:
+                print("Lỗi: File bundle trống không hợp lệ.")
+                exit(1)
+
+            # Lưu file
             with open(OUT, "wb") as f:
-                f.write(new_file.save())
+                f.write(env.file.save())
                 
             print(f"[OK] Đã tạo thành công: {OUT}")
         except Exception as e:
             print(f"[X] Lỗi khi tạo bundle: {e}")
             exit(1)
+        finally:
+            if os.path.exists(TEMP_EMPTY):
+                os.remove(TEMP_EMPTY)
         EOF
         
         python create_asset.py
 
-    # BƯỚC 3: TỰ ĐỘNG ĐẨY FILE LÊN GITHUB
+    # BƯỚC 3: ĐẨY FILE LÊN GITHUB
     - name: Commit and Push
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
