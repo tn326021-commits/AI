@@ -18,15 +18,7 @@ jobs:
       with:
         dotnet-version: '8.0.x'
 
-    - name: Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
-
-    - name: Install Dependencies
-      run: |
-        pip install pythonnet UnityPy
-
+    # 1. BIÊN DỊCH CODE MENU THÀNH DLL
     - name: Compile AimAssist to DLL
       run: |
         dotnet new classlib -n AimAssistProject -o temp_build
@@ -37,18 +29,60 @@ jobs:
         cp bin/Release/*/AimAssistProject.dll ../AimAssistAssembly.dll
         cd ..
 
-    - name: Download dnlib
+    # 2. DÙNG C# ĐỂ XÓA CODE CŨ VÀ NHÉT CODE MỚI
+    - name: Create and Run C# Merger
       run: |
-        dotnet new console -n TempDownloader -o temp_downloader
-        cd temp_downloader
+        # Tạo project C# để gộp file (thay thế cho Python)
+        dotnet new console -n MergerTool -o merger_tool
+        cd merger_tool
+        # Cài đặt dnlib
         dotnet add package dnlib --version 4.3.0
-        dotnet build -c Release
-        cp bin/Release/*/dnlib.dll ../dnlib.dll
-        cd ..
+        
+        # Tạo file code C# để thực hiện gộp
+        cat << 'EOF' > Program.cs
+        using System;
+        using dnlib.DotNet;
+        using dnlib.DotNet.Writer;
 
-    - name: Patch and Overwrite Bytes
-      run: |
-        python scripts/patch_bytes.py
+        class Program
+        {
+            static void Main()
+            {
+                string patchBytes = "../input/Assembly-CSharp-patch.bytes";
+                string newDll = "../AimAssistAssembly.dll";
+                string output = "../output/Assembly-CSharp-menu.bytes";
+
+                Console.WriteLine("[*] Đang mở file patch gốc...");
+                ModuleDefMD mainModule = ModuleDefMD.Load(patchBytes);
+
+                Console.WriteLine("[*] Đang xóa toàn bộ class cũ...");
+                var typesToRemove = new System.Collections.Generic.List<TypeDef>();
+                foreach (var t in mainModule.Types) { if (t.Name != "<Module>") typesToRemove.Add(t); }
+                foreach (var t in typesToRemove) { mainModule.Types.Remove(t); }
+
+                Console.WriteLine("[*] Đang nạp code Menu mới...");
+                ModuleDefMD newModule = ModuleDefMD.Load(newDll);
+
+                Console.WriteLine("[*] Đang chèn code mới...");
+                foreach (var t in newModule.Types)
+                {
+                    if (t.Name == "<Module>") continue;
+                    mainModule.Types.Add(t);
+                }
+
+                Console.WriteLine("[*] Đang lưu file...");
+                ModuleWriterOptions options = new ModuleWriterOptions(mainModule);
+                options.MetadataOptions.Flags |= MetadataFlags.PreserveAll;
+                mainModule.Write(output, options);
+                Console.WriteLine("[OK] Đã tạo file: " + output);
+            }
+        }
+        EOF
+        
+        # Chạy code C# để gộp
+        mkdir -p ../output
+        dotnet run -c Release
+        cd ..
 
     - name: Upload Final Artifact
       uses: actions/upload-artifact@v4
