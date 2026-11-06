@@ -1,5 +1,4 @@
 using System;
-using System.Reflection;
 using UnityEngine;
 using IFix;
 
@@ -7,20 +6,19 @@ namespace AimAssistMod
 {
     public class AimAssistMenu : MonoBehaviour
     {
-        // --- BIẾN CẤU HÌNH ---
+        // --- BIẾN CẤU HÌNH MENU ---
         public static bool EnableAimLock = true;
-        public static bool AimHeadNeck = false; // Chế độ bám Đầu + Cổ
+        public static bool AimHeadNeck = false; 
         public static bool AntiBan = true;
         public static bool StealthMode = true;
         
-        public static float HitboxSize = 1.2f; // Hitbox x3
+        public static float HitboxSize = 1.2f; 
         public static float AimSmooth = 25f;
 
         private bool _showMenu = false;
         private int _tapCount = 0;
         private float _lastTapTime = 0f;
         
-        // Giao diện Menu
         private Rect _menuRect = new Rect(20, 20, 380, 420);
         private GUIStyle _titleStyle, _labelStyle, _toggleStyle, _buttonStyle, _boxStyle;
         private Texture2D _bgTexture, _titleTexture;
@@ -37,7 +35,7 @@ namespace AimAssistMod
 
         void Update()
         {
-            // 1. NHẤP 4 LẦN ĐỂ MỞ MENU
+            // 1. NHẤP 4 LẦN MỞ MENU
             if (Input.GetMouseButtonDown(0))
             {
                 if (Time.time - _lastTapTime > 0.5f) _tapCount = 0;
@@ -46,7 +44,7 @@ namespace AimAssistMod
                 if (_tapCount >= 4) { _showMenu = !_showMenu; _tapCount = 0; }
             }
 
-            // 2. LOGIC AIM ASSIST
+            // 2. LOGIC AIM
             if (!EnableAimLock || !Input.GetMouseButton(1)) return;
             if (_mainCam == null) _mainCam = Camera.main;
             if (_playerTransform == null) return;
@@ -62,14 +60,12 @@ namespace AimAssistMod
             {
                 if (col.transform.root == _playerTransform) continue;
 
-                // Lấy điểm ngắm (Đầu hoặc Đầu+Cổ)
                 Transform targetBone = AimHeadNeck ? GetHeadNeckTarget(col.gameObject) : GetHeadTarget(col.gameObject);
                 if (targetBone == null) continue;
 
                 Vector3 targetPos = targetBone.position;
                 Vector3 toTarget = targetPos - _playerTransform.position;
 
-                // Kiểm tra vật cản
                 if (StealthMode)
                 {
                     RaycastHit hit;
@@ -80,8 +76,6 @@ namespace AimAssistMod
                 }
 
                 float distToRay = Vector3.Cross(aimDir, toTarget.normalized).magnitude * toTarget.magnitude;
-
-                // Tính toán Hitbox (Nếu bật Hitbox)
                 float currentHitbox = AimHeadNeck ? 0.5f : HitboxSize;
 
                 if (distToRay <= currentHitbox)
@@ -106,15 +100,15 @@ namespace AimAssistMod
             }
         }
 
-        // --- KHỞI TẠO GIAO DIỆN ĐẸP ---
         void InitStyles()
         {
+            // Tạo Texture nền
             _bgTexture = new Texture2D(1, 1);
-            _bgTexture.SetPixel(0, 0, new Color(0.1f, 0.1f, 0.1f, 0.95f)); // Nền đen mờ
+            _bgTexture.SetPixel(0, 0, new Color(0.1f, 0.1f, 0.1f, 0.95f));
             _bgTexture.Apply();
 
             _titleTexture = new Texture2D(1, 1);
-            _titleTexture.SetPixel(0, 0, new Color(0.8f, 0.2f, 0.2f, 1f)); // Đỏ đô
+            _titleTexture.SetPixel(0, 0, new Color(0.8f, 0.2f, 0.2f, 1f));
             _titleTexture.Apply();
 
             _boxStyle = new GUIStyle(GUI.skin.box);
@@ -133,7 +127,6 @@ namespace AimAssistMod
             _toggleStyle = new GUIStyle(GUI.skin.toggle);
             _toggleStyle.fontSize = 14;
             _toggleStyle.normal.textColor = Color.white;
-            _toggleStyle.onNormal.textColor = Color.green;
 
             _buttonStyle = new GUIStyle(GUI.skin.button);
             _buttonStyle.fontSize = 14;
@@ -148,46 +141,33 @@ namespace AimAssistMod
 
         void DrawMenuWindow(int windowID)
         {
-            // Vẽ nền
             GUI.Box(new Rect(0, 0, _menuRect.width, _menuRect.height), "", _boxStyle);
-
-            // Vẽ Tiêu đề
             GUI.DrawTexture(new Rect(0, 0, _menuRect.width, 40), _titleTexture);
             GUI.Label(new Rect(0, 5, _menuRect.width, 30), "AIM ASSIST & ANTIBAN", _titleStyle);
 
             GUILayout.Space(50);
 
-            // --- CÁC TÍNH NĂNG ---
-            EnableAimLock = GUILayout.Toggle(EnableAimLock, " Bật AimLock (Hitbox Đầu x3)", _toggleStyle);
+            EnableAimLock = GUILayout.Toggle(EnableAimLock, " Bật AimLock (Hitbox x3)", _toggleStyle);
             GUILayout.Space(10);
-            
-            AimHeadNeck = GUILayout.Toggle(AimHeadNeck, " Chế độ Aim Đầu + Cổ (Bone)", _toggleStyle);
+            AimHeadNeck = GUILayout.Toggle(AimHeadNeck, " Aim Đầu + Cổ (Bone)", _toggleStyle);
             GUILayout.Space(10);
-
-            AntiBan = GUILayout.Toggle(AntiBan, " Chặn KillCam Report (Anti-Ban)", _toggleStyle);
+            AntiBan = GUILayout.Toggle(AntiBan, " Anti-Ban (Chặn Report)", _toggleStyle);
             GUILayout.Space(10);
-
-            StealthMode = GUILayout.Toggle(StealthMode, " Chế độ Tàng Hình (Chống quét)", _toggleStyle);
+            StealthMode = GUILayout.Toggle(StealthMode, " Chế độ Tàng Hình", _toggleStyle);
             GUILayout.Space(20);
 
-            // --- THANH TRƯỢT ---
-            GUILayout.Label($"Kích thước Hitbox: {HitboxSize:F2}m", _labelStyle);
+            GUILayout.Label($"Hitbox: {HitboxSize:F2}m", _labelStyle);
             HitboxSize = GUILayout.HorizontalSlider(HitboxSize, 0.5f, 3.0f);
             GUILayout.Space(10);
 
-            GUILayout.Label($"Độ mượt (Smooth): {AimSmooth:F1}", _labelStyle);
+            GUILayout.Label($"Độ mượt: {AimSmooth:F1}", _labelStyle);
             AimSmooth = GUILayout.HorizontalSlider(AimSmooth, 5f, 80f);
-
             GUILayout.Space(25);
 
-            // Nút Đóng
-            if (GUILayout.Button("ĐÓNG MENU (Hoặc nhấp 4 lần)", _buttonStyle))
-                _showMenu = false;
-
+            if (GUILayout.Button("ĐÓNG MENU", _buttonStyle)) _showMenu = false;
             GUI.DragWindow(new Rect(0, 0, _menuRect.width, 40));
         }
 
-        // --- CÁC HÀM LẤY XƯƠNG ---
         private Transform GetHeadTarget(GameObject obj)
         {
             Type playerType = Type.GetType("COW.GamePlay.Player, Assembly-CSharp");
@@ -196,11 +176,9 @@ namespace AimAssistMod
                 Component comp = obj.GetComponent(playerType);
                 if (comp != null)
                 {
-                    // Ưu tiên lấy HeadBoneTransform
-                    MethodInfo m = playerType.GetMethod("get_HeadBoneTransform");
+                    var m = playerType.GetMethod("get_HeadBoneTransform");
                     if (m != null) return m.Invoke(comp, null) as Transform;
-
-                    // Fallback sang HeadCollider
+                    
                     m = playerType.GetMethod("get_HeadCollider");
                     if (m != null) return m.Invoke(comp, null) as Transform;
                 }
@@ -216,16 +194,14 @@ namespace AimAssistMod
                 Component comp = obj.GetComponent(playerType);
                 if (comp != null)
                 {
-                    // Kết hợp Đầu và Cột sống (Spine) để tạo vùng Cổ
-                    MethodInfo headM = playerType.GetMethod("get_HeadBoneTransform");
-                    MethodInfo spineM = playerType.GetMethod("get_SpineBoneTransform");
+                    var headM = playerType.GetMethod("get_HeadBoneTransform");
+                    var spineM = playerType.GetMethod("get_SpineBoneTransform");
                     
                     Transform head = headM?.Invoke(comp, null) as Transform;
                     Transform spine = spineM?.Invoke(comp, null) as Transform;
 
                     if (head != null && spine != null)
                     {
-                        // Tạo một Transform ảo ở giữa Đầu và Cột sống
                         GameObject go = new GameObject("AimNeckTarget");
                         go.transform.position = Vector3.Lerp(head.position, spine.position, 0.5f);
                         return go.transform;
@@ -248,7 +224,7 @@ namespace AimAssistMod
         }
     }
 
-    // --- CLASS PATCH CHẶN BÁO CÁO (ANTI-BAN) ---
+    // --- CLASS CHẶN BÁO CÁO ---
     public class KillCamPatch
     {
         [IFix.Patch]
@@ -256,7 +232,7 @@ namespace AimAssistMod
 
         [IFix.Patch]
         public static object GetReportData_Patch(object __instance) { return null; }
-
+        
         [IFix.Patch]
         public static object __Gen_Wrap_6865_Patch(object __instance, object P0) { return null; }
     }
