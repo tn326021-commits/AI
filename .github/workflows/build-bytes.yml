@@ -16,7 +16,7 @@ jobs:
     - name: Setup .NET SDK
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '7.0.x'
+        dotnet-version: '8.0.x' # Sử dụng .NET 8 cho ổn định
 
     - name: Setup Python
       uses: actions/setup-python@v5
@@ -40,12 +40,19 @@ jobs:
         cd temp_build
         dotnet build -c Release
         
-        # 4. Copy file DLL kết quả ra thư mục gốc để Python xử lý
+        # 4. Copy file DLL kết quả ra thư mục gốc (dùng dấu * để tự động tìm net8.0)
         cp bin/Release/*/AimAssistProject.dll ../AimAssistAssembly.dll
+        cd ..
 
     - name: Download dnlib for Merging
       run: |
-        wget https://github.com/0xd4d/dnlib/releases/download/v4.3.0/dnlib.dll
+        # Tải dnlib từ NuGet (tránh lỗi link Github bị xóa)
+        dotnet new console -n TempDownloader -o temp_downloader
+        cd temp_downloader
+        dotnet add package dnlib --version 4.3.0
+        dotnet build -c Release
+        cp bin/Release/*/dnlib.dll ../dnlib.dll
+        cd ..
 
     - name: Merge DLLs with Original Patch
       run: |
