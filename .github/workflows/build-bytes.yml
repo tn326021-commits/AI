@@ -1,4 +1,4 @@
-name: Build and Merge AimAssist
+name: Build Clean AimAssist Mod
 
 on:
   push:
@@ -18,6 +18,11 @@ jobs:
       with:
         dotnet-version: '8.0.x'
 
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
     - name: Compile AimAssist to DLL
       run: |
         dotnet new classlib -n AimAssistProject -o temp_build
@@ -28,15 +33,12 @@ jobs:
         cp bin/Release/*/AimAssistProject.dll ../AimAssistAssembly.dll
         cd ..
 
-    - name: Append DLL to bytes file
+    - name: Clean and Pack Bytes File
       run: |
-        mkdir -p output
-        # Nối file patch gốc và file DLL mới thành 1 file duy nhất
-        cat input/Assembly-CSharp-patch.bytes AimAssistAssembly.dll > output/Assembly-CSharp-merged.bytes
-        echo "[OK] Đã nối file thành công!"
+        python scripts/clean_pack.py
 
     - name: Upload Final Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: AimAssist-Patched-Bundle
-        path: output/Assembly-CSharp-merged.bytes
+        name: AimAssist-Clean-Mod
+        path: output/Assembly-CSharp-clean.bytes
