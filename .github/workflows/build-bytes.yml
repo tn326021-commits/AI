@@ -33,9 +33,19 @@ jobs:
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
-        git add output/aimmenu_bundle
-        git commit -m "Auto-update: Generated AimMenu AssetBundle" || echo "No changes to commit"
-        git push
+        
+        # In ra kiểm tra
+        echo "--- Kiểm tra thư mục output ---"
+        ls -la output/ || true
+        
+        # Ép thêm file (dùng -f để bỏ qua gitignore nếu có)
+        git add -f output/aimmenu_bundle || true
+        
+        # Commit (nếu có thay đổi)
+        git commit -m "Auto-update: Generated AimMenu AssetBundle" || echo "Không có gì để commit"
+        
+        # Push
+        git push || echo "Không có gì để push"
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
