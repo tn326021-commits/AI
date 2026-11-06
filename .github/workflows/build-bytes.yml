@@ -1,46 +1,22 @@
-name: Build AimLock.bytes (Unity TextAsset)
+name: Build AimLock AssetBundle
 
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:
-
-permissions:
-  contents: write
 
 jobs:
   build:
+    name: Build AssetBundle for Unity 2018.4.12f1
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v2
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - name: Build AssetBundle
+        uses: game-ci/unity-builder@v2
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         with:
-          python-version: '3.11'
-
-      - name: Generate AimLock.bytes
-        run: |
-          python scripts/generate_bytes.py
-          echo "=== Kiểm tra nội dung (đọc trực tiếp) ==="
-          head -c 200 output/AimLock.bytes
-
-      - name: Commit & Push
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add output/
-          if git diff --staged --quiet; then
-            echo "Không có thay đổi."
-          else
-            git commit -m "Auto-Build: AimLock.bytes (Unity TextAsset) [Skip CI]"
-            git push
-          fi
-
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: aimlock-bytes
-          path: output/
-          retention-days: 30
+          unityVersion: 2018.4.12f1
+          targetPlatform: StandaloneWindows64
+          customParameters: -executeMethod AimLockBuilder.BuildAndEncryptAssetBundle
