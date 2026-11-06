@@ -6,7 +6,7 @@ on:
   workflow_dispatch: 
 
 permissions:
-  contents: write # Cấp quyền ghi để commit file
+  contents: write
 
 jobs:
   build:
@@ -27,28 +27,25 @@ jobs:
 
     - name: Create AssetBundle
       run: |
-        python scripts/create_bundle.py
+        # Chạy script trong thư mục 'kịch bản'
+        python "scripts/create_bundle.py"
 
     - name: Commit and Push AssetBundle
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
         
-        # In ra kiểm tra
-        echo "--- Kiểm tra thư mục output ---"
-        ls -la output/ || true
+        echo "--- Kiểm tra thư mục đầu ra ---"
+        ls -la "đầu ra/" || true
         
-        # Ép thêm file (dùng -f để bỏ qua gitignore nếu có)
-        git add -f output/aimmenu_bundle || true
+        # Thêm file với đường dẫn có dấu
+        git add -f "output/aimmenu_bundle" || true
         
-        # Commit (nếu có thay đổi)
         git commit -m "Auto-update: Generated AimMenu AssetBundle" || echo "Không có gì để commit"
-        
-        # Push
         git push || echo "Không có gì để push"
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: AimMenu-Bundle
-        path: output/aimmenu_bundle
+        path: "output/aimmenu_bundle"
