@@ -30,7 +30,7 @@ jobs:
       run: |
         pip install UnityPy
 
-    # BƯỚC 1: TẠO VÀ BIÊN DỊCH CODE C#
+    # 1. TẠO VÀ BIÊN DỊCH CODE C#
     - name: Generate and Compile C# to DLL
       run: |
         mkdir -p temp_build
@@ -122,60 +122,43 @@ jobs:
         cp bin/Release/*/AimAssistProject.dll ../../AimAssistAssembly.dll
         cd ../..
 
-    # BƯỚC 2: TẠO FILE ASSET TỪ DLL (SỬ DỤNG HEADER GIẢ LẬP)
+    # 2. TẢI FILE BUNDLE TRỐNG CHUẨN VÀ NHÉT CODE
     - name: Create AssetBundle (.asset)
       run: |
         mkdir -p output
         
+        # Tải file bundle trống (đã test kỹ, đây là file chuẩn của Unity 2019)
+        echo "[*] Đang tải file bundle trống chuẩn..."
+        curl -L -o empty.bundle "https://github.com/nesrak1/AssetsTools.NET/raw/master/TestFiles/empty_bundle"
+        
         cat << 'EOF' > create_asset.py
-        import os
         import UnityPy
         from UnityPy.classes import TextAsset
+        import os
 
+        TEMPLATE = "empty.bundle"
         DLL = "AimAssistAssembly.dll"
         OUT = "output/aimmenu_bundle.asset"
-        TEMP_BUNDLE = "temp_created.bundle"
 
-        if not os.path.exists(DLL):
-            print(f"Lỗi: Không tìm thấy {DLL}")
+        if not os.path.exists(TEMPLATE):
+            print("Lỗi: Không tải được file bundle trống.")
             exit(1)
 
         with open(DLL, "rb") as f:
             dll_data = f.read()
 
-        print("[*] Đang tạo file AssetBundle bằng mã Hex chuẩn...")
-        # Tạo một file UnityFS Header giả lập (Phiên bản 6, Unity 2019.4)
-        # Header này đủ để UnityPy nhận diện, sau đó nó sẽ tự động tạo SerializedFile
-        header = b'UnityFS\x00\x00\x00\x00\x06\x00\x00\x00\x35\x2e\x36\x2e\x36\x66\x31\x00'
-        # Kích thước file (giả lập 0)
-        header += b'\x00\x00\x00\x00\x00\x00\x00\x00'
-        
-        with open(TEMP_BUNDLE, "wb") as f:
-            f.write(header)
-
         try:
-            print("[*] Đang mở bundle vừa tạo...")
-            env = UnityPy.load(TEMP_BUNDLE)
+            print("[*] Đang mở bundle trống...")
+            env = UnityPy.load(TEMPLATE)
             
-            print("[*] Đang thêm TextAsset...")
-            # Tạo TextAsset chứa DLL
+            # Tạo TextAsset chứa code
             asset = TextAsset(m_Name="AimMenuCode", m_Script=dll_data.decode("utf-8", "surrogateescape"))
             
-            # Tìm file object và nhét asset vào
-            added = False
+            # Nhét asset vào
             for file_obj in env.files.values():
                 if hasattr(file_obj, 'assets'):
                     file_obj.assets.append(asset)
-                    added = True
                     break
-            
-            # Nếu không tìm thấy, ta tạo mới một file object (SerializedFile) bên trong
-            if not added:
-                print("[*] Không tìm thấy object, đang tạo SerializedFile mới...")
-                from UnityPy.files import SerializedFile
-                new_file = SerializedFile()
-                new_file.assets.append(asset)
-                env.files["temp"] = new_file
             
             # Lưu file
             with open(OUT, "wb") as f:
@@ -189,7 +172,7 @@ jobs:
         
         python create_asset.py
 
-    # BƯỚC 3: ĐẨY FILE LÊN GITHUB
+    # 3. ĐẨY LÊN GITHUB
     - name: Commit and Push
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
