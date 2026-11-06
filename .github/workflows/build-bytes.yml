@@ -1,4 +1,4 @@
-name: Build and Commit AssetBundle
+name: Auto Build Aim Head AssetBundle
 
 on:
   push:
@@ -16,6 +16,11 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
@@ -25,27 +30,138 @@ jobs:
       run: |
         pip install UnityPy
 
-    - name: Create AssetBundle
+    # BƯỚC 1: TỰ ĐỘNG TẠO CODE C# (BẠN KHÔNG CẦN TẠO FILE src/AimAssist.cs NỮA)
+    - name: Generate and Compile C# to DLL
       run: |
-        # Chạy script trong thư mục 'kịch bản'
-        python "scripts/create_bundle.py"
+        mkdir -p temp_build
+        cd temp_build
+        
+        # Tạo file code C# tự động
+        cat << 'EOF' > Class1.cs
+        using System;
+        using UnityEngine;
+        using IFix;
 
-    - name: Commit and Push AssetBundle
+        namespace AimAssistMod
+        {
+            public class AimHeadMenu : MonoBehaviour
+            {
+                public static bool EnableAimHead = true;
+                public static float SmoothSpeed = 15f;
+                private Camera _mainCam;
+
+                void Start() { _mainCam = Camera.main; }
+
+                void Update()
+                {
+                    if (!EnableAimHead || !Input.GetMouseButton(1)) return; 
+                    if (_mainCam == null) _mainCam = Camera.main;
+
+                    Collider[] targets = Physics.OverlapSphere(_mainCam.transform.position, 200f);
+                    Transform bestHead = null;
+                    float bestDist = float.MaxValue;
+
+                    foreach (var col in targets)
+                    {
+                        if (col.transform.root == this.transform.root) continue;
+                        Transform head = GetHeadBone(col.gameObject);
+                        if (head == null) continue;
+
+                        float dist = Vector3.Distance(_mainCam.transform.position, head.position);
+                        if (dist < bestDist) { bestDist = dist; bestHead = head; }
+                    }
+
+                    if (bestHead != null)
+                    {
+                        Vector3 targetDir = (bestHead.position - _mainCam.transform.position).normalized;
+                        Quaternion targetRot = Quaternion.LookRotation(targetDir);
+                        _mainCam.transform.rotation = Quaternion.Slerp(_mainCam.transform.rotation, targetRot, Time.deltaTime * SmoothSpeed);
+                    }
+                }
+
+                private Transform GetHeadBone(GameObject obj)
+                {
+                    Type playerType = Type.GetType("COW.GamePlay.Player, Assembly-CSharp");
+                    if (playerType != null)
+                    {
+                        Component comp = obj.GetComponent(playerType);
+                        if (comp != null)
+                        {
+                            var m = playerType.GetMethod("get_HeadBoneTransform");
+                            if (m != null) return m.Invoke(comp, null) as Transform;
+                        }
+                    }
+                    return null;
+                }
+            }
+        }
+        EOF
+
+        # Tạo file giả lập Unity (Stub) để biên dịch không lỗi
+        cat << 'EOF' > UnityStub.cs
+        using System;
+        namespace UnityEngine {
+            public class Object { }
+            public class Component : Object { public Transform transform { get; set; } public GameObject gameObject { get; set; } }
+            public class Behaviour : Component { }
+            public class MonoBehaviour : Behaviour { }
+            public class GameObject : Object { public Transform transform { get; set; } public Component GetComponent(Type t) { return null; } }
+            public class Transform : Component { public Vector3 position { get; set; } public Quaternion rotation { get; set; } public Transform root { get; set; } }
+            public class Camera : Behaviour { public static Camera main { get; set; } public Transform transform { get; set; } }
+            public struct Vector3 { public static Vector3 zero => new Vector3(); public float magnitude => 0; public Vector3 normalized => this; public static Vector3 operator -(Vector3 a, Vector3 b) { return zero; } public static float Distance(Vector3 a, Vector3 b) { return 0; } }
+            public struct Quaternion { public static Quaternion LookRotation(Vector3 forward) { return new Quaternion(); } public static Quaternion Slerp(Quaternion a, Quaternion b, float t) { return new Quaternion(); } }
+            public class Collider : Component { }
+            public static class Physics { public static Collider[] OverlapSphere(Vector3 position, float radius) { return new Collider[0]; } }
+            public static class Input { public static bool GetMouseButton(int button) { return false; } }
+            public static class Time { public static float deltaTime => 0.016f; }
+        }
+        namespace IFix { public class PatchAttribute : Attribute { } }
+        EOF
+
+        dotnet new classlib -n AimAssistProject
+        dotnet build -c Release
+        cp bin/Release/*/AimAssistProject.dll ../AimAssistAssembly.dll
+        cd ..
+
+    # BƯỚC 2: TỰ ĐỘNG TẠO FILE .ASSET (BUNDLE) BẰNG PYTHON
+    - name: Create AssetBundle (.asset)
+      run: |
+        mkdir -p output
+        cat << 'EOF' > create_asset.py
+        import UnityPy
+        from UnityPy.classes import TextAsset
+        import os
+
+        # Bạn cần đảm bảo có file original.bundle trong thư mục input/
+        TEMPLATE = "input/original.bundle" 
+        DLL = "AimAssistAssembly.dll"
+        OUT = "output/aimmenu_bundle.asset"
+
+        if not os.path.exists(TEMPLATE):
+            print("Lỗi: Không tìm thấy file input/original.bundle")
+            exit(1)
+
+        with open(DLL, "rb") as f:
+            dll_data = f.read()
+
+        env = UnityPy.load(TEMPLATE)
+        asset = TextAsset(m_Name="AimMenuCode", m_Script=dll_data.decode("utf-8", "surrogateescape"))
+        
+        for file_obj in env.files.values():
+            file_obj.assets.append(asset)
+            break
+
+        with open(OUT, "wb") as f:
+            f.write(env.file.save())
+        print(f"Đã tạo thành công: {OUT}")
+        EOF
+        python create_asset.py
+
+    # BƯỚC 3: TỰ ĐỘNG ĐẨY FILE LÊN GITHUB
+    - name: Commit and Push
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
-        
-        echo "--- Kiểm tra thư mục đầu ra ---"
-        ls -la "đầu ra/" || true
-        
-        # Thêm file với đường dẫn có dấu
-        git add -f "output/aimmenu_bundle" || true
-        
-        git commit -m "Auto-update: Generated AimMenu AssetBundle" || echo "Không có gì để commit"
-        git push || echo "Không có gì để push"
-
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: AimMenu-Bundle
-        path: "output/aimmenu_bundle"
+        git add -f output/aimmenu_bundle.asset || true
+        git commit -m "Auto-build: AimHead AssetBundle" || echo "No changes"
+        git push || echo "Nothing to push"
