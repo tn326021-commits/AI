@@ -10,27 +10,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout mã nguồn
+      # 1. Checkout mã nguồn kho lưu trữ
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # 2. Cài đặt Python
+      # 2. Thiết lập môi trường Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 
-      # 3. Cài đặt thư viện mã hóa pycryptodome
+      # 3. Cài đặt các thư viện phụ thuộc (pycryptodome)
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install pycryptodome
 
-      # 4. Chạy script Python tạo và mã hóa asset
+      # 4. Chạy script Python để tạo file asset và mã hóa AES-256
       - name: Run Encryption Script
         run: python encrypt_asset.py
 
-      # 5. Lưu trữ artifact (sử dụng v4 mới nhất)
+      # 5. Lưu trữ artifact kết quả sau khi mã hóa
       - name: Upload Encrypted Asset Artifact
         uses: actions/upload-artifact@v4
         with:
