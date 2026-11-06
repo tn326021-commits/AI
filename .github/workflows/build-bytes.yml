@@ -1,4 +1,4 @@
-name: Build Hitbox x3 Patch
+name: Merge and Patch
 
 on:
   push:
@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
+    - name: Checkout
       uses: actions/checkout@v4
 
     - name: Setup .NET SDK
@@ -23,28 +23,24 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: Compile C# to DLL
+    - name: Install Dependencies
       run: |
-        # Tạo project tạm để build
+        pip install pythonnet
+
+    - name: Compile AimAssist to DLL
+      run: |
         dotnet new classlib -n AimAssistProject -o temp_build
         cp nguồn/AimAssist.cs temp_build/Class1.cs
-        
-        # Thêm reference (Bạn cần đảm bảo đã up các file .dll của game vào thư mục 'nguồn' hoặc 'libs')
-        # dotnet add temp_build/AimAssistProject.csproj reference nguồn/IFix.Core.dll
-        # dotnet add temp_build/AimAssistProject.csproj reference nguồn/Assembly-CSharp.dll
-        # dotnet add temp_build/AimAssistProject.csproj reference nguồn/UnityEngine.CoreModule.dll
-        
         cd temp_build
         dotnet build -c Release
-        # Copy file DLL ra ngoài thư mục gốc để script Python tìm thấy
         cp bin/Release/net7.0/AimAssistProject.dll ../AimAssistAssembly.dll
 
-    - name: Run Python Patch Script
+    - name: Merge DLLs
       run: |
-        python kịch bản/inject_bytes.py
+        python kịch bản/merge_dll.py
 
-    - name: Upload Result
+    - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: Hitbox-x3-Patch
-        path: đầu ra/Assembly-CSharp-hitbox_x3.bytes
+        name: merged-bytes
+        path: đầu ra/Assembly-CSharp-merged.bytes
