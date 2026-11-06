@@ -16,20 +16,11 @@ jobs:
     - name: Setup .NET SDK
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x' # Sử dụng .NET 8 cho ổn định
-
-    - name: Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
-
-    - name: Install Python Dependencies
-      run: |
-        pip install pythonnet
+        dotnet-version: '8.0.x'
 
     - name: Compile AimAssist to DLL
       run: |
-        # 1. Tạo project C# tạm thời
+        # 1. Tạo project C# tạm thời cho AimAssist
         dotnet new classlib -n AimAssistProject -o temp_build
         
         # 2. Copy cả code chính và file giả lập Unity vào project
@@ -39,25 +30,56 @@ jobs:
         # 3. Tiến hành biên dịch
         cd temp_build
         dotnet build -c Release
-        
-        # 4. Copy file DLL kết quả ra thư mục gốc (dùng dấu * để tự động tìm net8.0)
         cp bin/Release/*/AimAssistProject.dll ../AimAssistAssembly.dll
         cd ..
 
-    - name: Download dnlib for Merging
+    - name: Create and Run C# Merger
       run: |
-        # Tải dnlib từ NuGet (tránh lỗi link Github bị xóa)
-        dotnet new console -n TempDownloader -o temp_downloader
-        cd temp_downloader
+        # Tạo project C# để gộp file (thay thế cho Python)
+        dotnet new console -n MergerTool -o merger_tool
+        cd merger_tool
+        # Cài đặt dnlib
         dotnet add package dnlib --version 4.3.0
-        dotnet build -c Release
-        cp bin/Release/*/dnlib.dll ../dnlib.dll
-        cd ..
+        
+        # Tạo file code C# để thực hiện gộp
+        cat << 'EOF' > Program.cs
+        using System;
+        using dnlib.DotNet;
+        using dnlib.DotNet.Writer;
 
-    - name: Merge DLLs with Original Patch
-      run: |
-        # Chạy script Python để gộp file
-        python scripts/merge_dll.py
+        class Program
+        {
+            static void Main()
+            {
+                string patchBytes = "../input/Assembly-CSharp-patch.bytes";
+                string newDll = "../AimAssistAssembly.dll";
+                string output = "../output/Assembly-CSharp-merged.bytes";
+
+                Console.WriteLine("[*] Đang mở file patch gốc...");
+                ModuleDefMD mainModule = ModuleDefMD.Load(patchBytes);
+
+                Console.WriteLine("[*] Đang mở DLL mới...");
+                ModuleDefMD newModule = ModuleDefMD.Load(newDll);
+
+                Console.WriteLine("[*] Đang gộp class...");
+                foreach (var type in newModule.Types)
+                {
+                    if (type.Name == "<Module>") continue;
+                    mainModule.Types.Add(type);
+                }
+
+                Console.WriteLine("[*] Đang lưu file...");
+                ModuleWriterOptions options = new ModuleWriterOptions(mainModule);
+                options.MetadataOptions.Flags |= MetadataFlags.PreserveAll;
+                mainModule.Write(output, options);
+                Console.WriteLine("[OK] Đã tạo file: " + output);
+            }
+        }
+        EOF
+        
+        # Chạy code C# để gộp
+        dotnet run -c Release
+        cd ..
 
     - name: Upload Final Artifact
       uses: actions/upload-artifact@v4
