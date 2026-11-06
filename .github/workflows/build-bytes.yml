@@ -41,7 +41,7 @@ jobs:
         dotnet build -c Release
         
         # 4. Copy file DLL kết quả ra thư mục gốc để Python xử lý
-        cp bin/Release/net7.0/AimAssistProject.dll ../AimAssistAssembly.dll
+        cp bin/Release/*/AimAssistProject.dll ../AimAssistAssembly.dll
 
     - name: Download dnlib for Merging
       run: |
