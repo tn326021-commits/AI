@@ -1,13 +1,12 @@
-name: Create IFix Patch
+name: Build and Commit AssetBundle
 
 on:
   push:
     branches: [ main ]
   workflow_dispatch: 
 
-# Cấp quyền ghi cho GitHub Actions
 permissions:
-  contents: write
+  contents: write # Cấp quyền ghi để commit file
 
 jobs:
   build:
@@ -17,42 +16,29 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Setup .NET SDK
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '8.0.x'
-
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
 
-    - name: Compile AimAssist to DLL
+    - name: Install Dependencies
       run: |
-        dotnet new classlib -n AimAssistProject -o temp_build
-        cp src/AimAssist.cs temp_build/Class1.cs
-        cp src/UnityStub.cs temp_build/UnityStub.cs
-        cd temp_build
-        dotnet build -c Release
-        cp bin/Release/*/AimAssistProject.dll ../AimAssistAssembly.dll
-        cd ..
+        pip install UnityPy
 
-    - name: Create IFix Patch File
+    - name: Create AssetBundle
       run: |
-        python scripts/overwrite_bytes.py
+        python scripts/create_bundle.py
 
-    # BƯỚC MỚI: Tự động commit file kết quả vào thư mục output/
-    - name: Commit and Push Output File
+    - name: Commit and Push AssetBundle
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
-        git add output/Assembly-CSharp-patch.bytes
-        # Kiểm tra xem có thay đổi không trước khi commit
-        git diff --quiet && git diff --staged --quiet || git commit -m "Auto-update: Generated IFix Patch with AimAssist Menu"
+        git add output/aimmenu_bundle
+        git commit -m "Auto-update: Generated AimMenu AssetBundle" || echo "No changes to commit"
         git push
 
-    - name: Upload Final Artifact
+    - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: IFix-Patch-Bytes
-        path: output/Assembly-CSharp-patch.bytes
+        name: AimMenu-Bundle
+        path: output/aimmenu_bundle
