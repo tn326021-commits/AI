@@ -36,7 +36,6 @@ jobs:
         mkdir -p temp_build
         cd temp_build
         
-        # Tạo file code C#
         cat << 'EOF' > Class1.cs
         using System;
         using UnityEngine;
@@ -97,7 +96,6 @@ jobs:
         }
         EOF
 
-        # Tạo file giả lập Unity (Stub)
         cat << 'EOF' > UnityStub.cs
         using System;
         namespace UnityEngine {
@@ -118,14 +116,13 @@ jobs:
         namespace IFix { public class PatchAttribute : Attribute { } }
         EOF
 
-        # Khởi tạo project và build (Sửa lỗi MSB1003 bằng cách cd vào đúng thư mục)
         dotnet new classlib -n AimAssistProject
         cd AimAssistProject
         dotnet build -c Release
         cp bin/Release/*/AimAssistProject.dll ../../AimAssistAssembly.dll
         cd ../..
 
-    # BƯỚC 2: TỰ ĐỘNG TẠO FILE .ASSET (BUNDLE)
+    # BƯỚC 2: TỰ ĐỘNG TẠO FILE .ASSET (BUNDLE) TỪ CON SỐ 0
     - name: Create AssetBundle (.asset)
       run: |
         mkdir -p output
@@ -133,33 +130,39 @@ jobs:
         cat << 'EOF' > create_asset.py
         import UnityPy
         from UnityPy.classes import TextAsset
+        from UnityPy.files import SerializedFile
         import os
 
-        # Sử dụng đường dẫn thư mục input/ như trong ảnh của bạn
-        TEMPLATE = "input/original.bundle" 
         DLL = "AimAssistAssembly.dll"
         OUT = "output/aimmenu_bundle.asset"
 
-        if not os.path.exists(TEMPLATE):
-            print(f"Lỗi: Không tìm thấy file mẫu {TEMPLATE}")
+        if not os.path.exists(DLL):
+            print(f"Lỗi: Không tìm thấy {DLL}")
             exit(1)
 
         with open(DLL, "rb") as f:
             dll_data = f.read()
 
         try:
-            env = UnityPy.load(TEMPLATE)
+            print("[*] Đang tạo AssetBundle trống...")
+            
+            # Tạo một SerializedFile mới (định dạng gốc của Unity)
+            new_file = SerializedFile()
+            
+            # Tạo TextAsset chứa code DLL
             asset = TextAsset(m_Name="AimMenuCode", m_Script=dll_data.decode("utf-8", "surrogateescape"))
             
-            for file_obj in env.files.values():
-                file_obj.assets.append(asset)
-                break
-
+            # Thêm asset vào file
+            new_file.assets.append(asset)
+            
+            # Đóng gói thành file AssetBundle
+            # Lưu ý: UnityPy sẽ tự động tạo Header UnityFS cho nó
             with open(OUT, "wb") as f:
-                f.write(env.file.save())
-            print(f"Đã tạo thành công: {OUT}")
+                f.write(new_file.save())
+                
+            print(f"[OK] Đã tạo thành công: {OUT}")
         except Exception as e:
-            print(f"Lỗi khi tạo bundle: {e}")
+            print(f"[X] Lỗi khi tạo bundle: {e}")
             exit(1)
         EOF
         
