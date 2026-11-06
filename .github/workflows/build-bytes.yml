@@ -122,14 +122,14 @@ jobs:
         cp bin/Release/*/AimAssistProject.dll ../../AimAssistAssembly.dll
         cd ../..
 
-    # BƯỚC 2: TẢI FILE BUNDLE TRỐNG CHUẨN VÀ NHÉT CODE VÀO
+    # BƯỚC 2: TẢI FILE BUNDLE TRỐNG CHUẨN VÀ NHÉT DLL VÀO
     - name: Create AssetBundle (.asset)
       run: |
         mkdir -p output
         
-        # Tải một file bundle rỗng được tạo bởi Unity từ GitHub của một dự án mã nguồn mở
+        # Tải file AssetBundle trống được tạo bởi Unity 2021 (đã kiểm tra hợp lệ)
         echo "[*] Đang tải file bundle trống chuẩn..."
-        curl -L -o empty.bundle "https://github.com/4sval/FModel/raw/master/FModel/Resources/empty.bundle"
+        curl -L -o empty.bundle "https://github.com/AssetRipper/AssetRipper/raw/master/TestInputs/empty_bundle"
         
         cat << 'EOF' > create_asset.py
         import UnityPy
@@ -151,15 +151,19 @@ jobs:
             print("[*] Đang mở bundle trống...")
             env = UnityPy.load(TEMPLATE)
             
-            # Thêm TextAsset chứa code
+            # Tạo TextAsset chứa code
             asset = TextAsset(m_Name="AimMenuCode", m_Script=dll_data.decode("utf-8", "surrogateescape"))
             
-            if env.files:
-                for file_obj in env.files.values():
+            # Duyệt và thêm vào file object đầu tiên có thuộc tính 'assets'
+            added = False
+            for file_obj in env.files.values():
+                if hasattr(file_obj, 'assets'):
                     file_obj.assets.append(asset)
+                    added = True
                     break
-            else:
-                print("Lỗi: File bundle trống không hợp lệ.")
+            
+            if not added:
+                print("Lỗi: Không tìm thấy file object để nhét asset.")
                 exit(1)
 
             # Lưu file
