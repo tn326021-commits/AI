@@ -2,20 +2,26 @@ import os
 import UnityPy
 from UnityPy.classes import TextAsset
 
-# Đường dẫn file
-TEMPLATE_BUNDLE = "input/aimmenu_bundle_empty" # Bạn cần có 1 file bundle trống ở đây
-SOURCE_DLL = "input/Assembly-CSharp-clean.bytes"
-OUTPUT_BUNDLE = "output/aimmenu_bundle" # Tên file đầu ra
+# Sử dụng file original.bundle của bạn làm khuôn mẫu
+TEMPLATE_BUNDLE = "đầu vào/original.bundle" 
+# File DLL chứa code Menu
+SOURCE_DLL = "đầu vào/Assembly-CSharp-clean.bytes"
+# File AssetBundle đầu ra
+OUTPUT_BUNDLE = "đầu ra/aimmenu_bundle"
+# Tên của Asset bên trong
 ASSET_NAME = "AimMenuCode"
 
 def create_bundle():
-    os.makedirs("output", exist_ok=True)
+    # Tạo thư mục đầu ra nếu chưa có
+    os.makedirs("đầu ra", exist_ok=True)
     
-    # Nếu không có file bundle trống, ta tạo một file rỗng giả lập để test
     if not os.path.exists(TEMPLATE_BUNDLE):
-        print(f"[!] Không tìm thấy file mẫu {TEMPLATE_BUNDLE}. Tạo file rỗng...")
-        with open(TEMPLATE_BUNDLE, "wb") as f:
-            f.write(b"UnityFS\x00") # Header giả lập
+        print(f"[X] Không tìm thấy file mẫu: {TEMPLATE_BUNDLE}")
+        return
+
+    if not os.path.exists(SOURCE_DLL):
+        print(f"[X] Không tìm thấy file DLL: {SOURCE_DLL}")
+        return
 
     print(f"[*] Đang đọc file DLL: {SOURCE_DLL}")
     with open(SOURCE_DLL, "rb") as f:
@@ -23,24 +29,24 @@ def create_bundle():
 
     print("[*] Đang tạo AssetBundle chứa DLL...")
     try:
-        # Load bundle trống
+        # Mở file bundle gốc của bạn
         env = UnityPy.load(TEMPLATE_BUNDLE)
         
-        # Tạo TextAsset
+        # Tạo TextAsset chứa code
         asset = TextAsset(m_Name=ASSET_NAME, m_Script=dll_bytes.decode("utf-8", "surrogateescape"))
         
-        # Nhét asset vào file đầu tiên
+        # Thêm vào file đầu tiên trong bundle
         if env.files:
             for file_obj in env.files.values():
                 file_obj.assets.append(asset)
                 break
         else:
-            print("[X] File bundle mẫu không hợp lệ (không có file object).")
+            print("[X] File bundle mẫu không hợp lệ.")
             return
 
-        # Lưu ra file (Dùng hàm save() của file object)
+        # Lưu ra file mới
         with open(OUTPUT_BUNDLE, "wb") as f:
-            f.write(env.file.save()) # Lưu ý: env.file là thuộc tính, không phải hàm
+            f.write(env.file.save())
             
         print(f"[OK] Đã tạo AssetBundle thành công tại: {OUTPUT_BUNDLE}")
 
