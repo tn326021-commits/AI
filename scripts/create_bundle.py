@@ -26,15 +26,19 @@ def create_bundle():
     env = UnityPy.Environment()
     
     # Tạo TextAsset bằng cách truyền tham số trực tiếp
-    # (Sửa lỗi: TextAsset cần m_Name và m_Script khi khởi tạo)
     asset = TextAsset(m_Name=ASSET_NAME, m_Script=dll_bytes)
     
-    # Thêm asset vào file (tạo một SerializedFile mới)
-    env.file.assets.append(asset)
+    # SỬA LỖI: Thay 'env.file' bằng 'env.files' để phù hợp với API mới
+    # Tạo một SerializedFile mới để chứa asset
+    from UnityPy.files import SerializedFile
+    new_file = SerializedFile()
+    new_file.assets.append(asset)
+    env.files["aimmenu"] = new_file
     
     # Lưu thành file AssetBundle
+    # Sử dụng trực tiếp đối tượng file vừa tạo để lưu
     with open(OUTPUT_BUNDLE, "wb") as f:
-        f.write(env.file.save())
+        f.write(new_file.save())
         
     print(f"[OK] Đã tạo AssetBundle thành công tại: {OUTPUT_BUNDLE}")
 
