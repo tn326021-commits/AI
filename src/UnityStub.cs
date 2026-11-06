@@ -99,12 +99,14 @@ namespace UnityEngine
     public enum FontStyle { Bold }
 
     public class GUIStyle
-    {
-        public int fontSize { get; set; }
-        public FontStyle fontStyle { get; set; }
-        public TextAnchor alignment { get; set; }
-        public GUIStyleState normal { get; set; } = new GUIStyleState();
-        public GUIStyleState onNormal { get; set; } = new GUIStyleState();
+{
+    public GUIStyle() { }
+    public GUIStyle(GUIStyle other) { } // Thêm hàm khởi tạo này
+    public int fontSize { get; set; }
+    public FontStyle fontStyle { get; set; }
+    public TextAnchor alignment { get; set; }
+    public GUIStyleState normal { get; set; } = new GUIStyleState();
+    public GUIStyleState onNormal { get; set; } = new GUIStyleState();
     }
 
     public class GUIStyleState
