@@ -1,0 +1,88 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0000000000000000e000000000000000, type: 3}
+  m_Name: AimLockHead_AdvancedConfig
+  
+  # ==========================================
+  # 1. THÔNG SỐ KHÓA MỤC TIÊU & BONE PHẦN ĐẦU
+  # ==========================================
+  headBoneName: "Bip01_Head"
+  spineBoneName: "Bip01_Spine2"
+  fallbackBoneName: "Neck"
+  autoDetectBoneInChildren: 1
+  allowBodyFallbackIfHeadMissing: 1
+
+  # ==========================================
+  # 2. KHOẢNG CÁCH & GÓC QUÉT (FOV CONSTRAINTS)
+  # ==========================================
+  minTargetDistance: 1.5
+  maxTargetDistance: 150.0
+  viewFieldAngle: 22.5
+  innerDeadZoneRadius: 2.0
+  outerScreenBoundaryPadding: 0.05
+
+  # ==========================================
+  # 3. ĐỘ LỆCH & DỰ ĐOÁN ĐƯỜNG ĐẠN (PREDICTION)
+  # ==========================================
+  headOffsetAdjustment:
+    x: 0.00
+    y: 0.06
+    z: 0.01
+  enableVelocityPrediction: 1
+  predictionMultiplier: 0.85
+  gravityCompensationFactor: 0.35
+  maxPredictionTimeStep: 0.5
+
+  # ==========================================
+  # 4. TỐC ĐỘ, ĐỘ MƯỢT & INTERPOLATION
+  # ==========================================
+  smoothingAlgorithmType: 2 # 0: Linear, 1: Lerp, 2: Slerp, 3: SmoothDamp
+  aimSmoothingSpeed: 28.5
+  rotationDampingFactor: 0.12
+  snapToTargetThreshold: 0.02
+  enableDynamicSpeedScaling: 1
+  speedScalingFactorByDistance: 0.05
+
+  # ==========================================
+  # 5. BỘ LỌC MÔI TRƯỜNG & VẬT CẢN (RAYCAST)
+  # ==========================================
+  requireDirectLineOfSight: 1
+  raycastCheckFrequency: 0.05
+  obstaclesLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295 # Toàn bộ Layer va chạm
+  ignoreTransparentObjects: 1
+  penetrationCheckEnabled: 0
+
+  # ==========================================
+  # 6. THUẬT TOÁN ƯU TIÊN & CHUYỂN MỤC TIÊU
+  # ==========================================
+  prioritizeCenterScreen: 1
+  prioritizeLowestHealth: 0
+  prioritizeClosestDistance: 0
+  switchTargetCooldownDuration: 0.15
+  stickyTargetLock: 1
+  releaseLockOnTargetDeath: 1
+
+  # ==========================================
+  # 7. HỆ THỐNG GIAO DIỆN & HIỆU ỨNG (UI/SFX)
+  # ==========================================
+  enableHeadshotCrosshairUI: 1
+  crosshairHighlightScale: 1.35
+  lockOnIndicatorColor:
+    r: 1.0
+    v: 0.1
+    b: 0.1
+    a: 1.0
+  playLockOnSoundEffect: 1
+  audioVolumeLevel: 0.9
+  hapticFeedbackEnabled: 1
