@@ -1,40 +1,40 @@
-name: Build and Patch AssetBundle
+name: Build IFix Hotfix Bundle
 
 on:
   push:
-    branches: [ main, master ]
-  workflow_dispatch: # Cho phép bấm nút chạy thủ công
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repository
+    - name: Checkout
       uses: actions/checkout@v4
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '7.0.x'
 
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
 
-    - name: Install Mono (C# Compiler)
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y mono-mcs
-
-    - name: Install Python Dependencies
+    - name: Install Dependencies
       run: |
         pip install -r requirements.txt
 
-    - name: Compile C# to DLL
+    - name: Compile IFix C# Script
       run: python scripts/compile_cs.py
 
-    - name: Patch AssetBundle with UnityPy
+    - name: Patch Bundle
       run: python scripts/patch_bundle.py
 
-    - name: Upload Modified Bundle
+    - name: Upload Patched Bundle
       uses: actions/upload-artifact@v4
       with:
-        name: patched-bundle
+        name: ifix-patched-bundle
         path: output/modified.bundle
