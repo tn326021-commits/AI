@@ -21,16 +21,15 @@ def create_bundle():
         dll_bytes = f.read()
 
     print("[*] Đang tạo AssetBundle chứa DLL...")
-    # Khởi tạo môi trường UnityPy
+    
+    # Tạo một Environment trống
     env = UnityPy.Environment()
     
-    # Tạo một TextAsset mới
-    asset = TextAsset()
-    asset.m_Name = ASSET_NAME
-    # Chuyển byte DLL thành chuỗi (dùng surrogateescape để giữ nguyên byte)
-    asset.m_Script = dll_bytes.decode("utf-8", "surrogateescape")
+    # Tạo TextAsset bằng cách truyền tham số trực tiếp
+    # (Sửa lỗi: TextAsset cần m_Name và m_Script khi khởi tạo)
+    asset = TextAsset(m_Name=ASSET_NAME, m_Script=dll_bytes)
     
-    # Thêm asset vào file
+    # Thêm asset vào file (tạo một SerializedFile mới)
     env.file.assets.append(asset)
     
     # Lưu thành file AssetBundle
