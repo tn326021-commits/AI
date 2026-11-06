@@ -1,39 +1,40 @@
-name: AimLock Production Build & Encrypt
+name: Build and Patch AssetBundle
 
 on:
   push:
-    branches: [ "main", "master" ]
-  workflow_dispatch:
+    branches: [ main, master ]
+  workflow_dispatch: # Cho phép bấm nút chạy thủ công
 
 jobs:
-  build-and-encrypt:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout mã nguồn kho lưu trữ
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+    - name: Checkout Repository
+      uses: actions/checkout@v4
 
-      # 2. Thiết lập môi trường Python
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
 
-      # 3. Cài đặt các thư viện phụ thuộc (pycryptodome)
-      - name: Install Dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pycryptodome
+    - name: Install Mono (C# Compiler)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y mono-mcs
 
-      # 4. Chạy script Python để tạo file asset và mã hóa AES-256
-      - name: Run Encryption Script
-        run: python scripts/encrypt_asset.py
+    - name: Install Python Dependencies
+      run: |
+        pip install -r requirements.txt
 
+    - name: Compile C# to DLL
+      run: python scripts/compile_cs.py
 
-      # 5. Lưu trữ artifact kết quả sau khi mã hóa
-      - name: Upload Encrypted Asset Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: Aimlock-AssetBundle
-          path: Assets/AssetBundles/Aimlock.asset
+    - name: Patch AssetBundle with UnityPy
+      run: python scripts/patch_bundle.py
+
+    - name: Upload Modified Bundle
+      uses: actions/upload-artifact@v4
+      with:
+        name: patched-bundle
+        path: output/modified.bundle
