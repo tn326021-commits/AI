@@ -1,29 +1,32 @@
 import os
 
-# File DLL chứa Menu của bạn (được sinh ra từ bước Compile)
+ORIGINAL_BYTES = "input/Assembly-CSharp-patch.bytes"
 NEW_DLL = "AimAssistAssembly.dll"
-# File kết quả
-OUTPUT_BYTES = "output/Assembly-CSharp-clean.bytes"
+OUTPUT_BYTES = "output/Assembly-CSharp-patch.bytes"
 
-def overwrite_bytes():
-    # Tạo thư mục output nếu chưa có
+def create_ifix_patch():
     os.makedirs("output", exist_ok=True)
     
-    print(f"[*] Đang đọc file DLL Menu mới: {NEW_DLL}")
-    if not os.path.exists(NEW_DLL):
-        print(f"[X] Lỗi: Không tìm thấy {NEW_DLL}")
-        return
+    print(f"[*] Đang đọc file gốc: {ORIGINAL_BYTES}")
+    with open(ORIGINAL_BYTES, "rb") as f:
+        original_data = f.read()
 
-    # Đọc toàn bộ dữ liệu của file DLL
+    # Tìm vị trí kết thúc của phần Header (thường là nơi bắt đầu mã IL)
+    # Chúng ta tìm chuỗi ký tự đánh dấu kết thúc danh sách tham chiếu (ví dụ: null byte hoặc một mẫu cụ thể)
+    # Ở đây, tôi sẽ lấy 2000 byte đầu tiên làm Header mẫu (bạn có thể điều chỉnh con số này)
+    header_size = 2000
+    header_data = original_data[:header_size]
+
+    print(f"[*] Đang đọc code Menu: {NEW_DLL}")
     with open(NEW_DLL, "rb") as f:
-        new_data = f.read()
+        new_code = f.read()
 
-    print("[*] Đang xóa nội dung cũ và tạo file .bytes mới...")
-    # GHI ĐÈ: Tạo ra file .bytes hoàn toàn mới
+    print("[*] Đang ghép Header + Code Menu...")
     with open(OUTPUT_BYTES, "wb") as f:
-        f.write(new_data)
-        
-    print(f"[OK] Đã tạo file thành công! File lưu tại: {OUTPUT_BYTES}")
+        f.write(header_data)
+        f.write(new_code)
+
+    print(f"[OK] Đã tạo file IFix Patch tại: {OUTPUT_BYTES}")
 
 if __name__ == "__main__":
-    overwrite_bytes()
+    create_ifix_patch()
