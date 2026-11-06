@@ -1,4 +1,4 @@
-name: Build Clean AimAssist Mod
+name: Patch IFix Bytes with Mod Menu
 
 on:
   push:
@@ -13,32 +13,17 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Setup .NET SDK
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '8.0.x'
-
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
 
-    - name: Compile AimAssist to DLL
+    - name: Patch and Pack Bytes
       run: |
-        dotnet new classlib -n AimAssistProject -o temp_build
-        cp src/AimAssist.cs temp_build/Class1.cs
-        cp src/UnityStub.cs temp_build/UnityStub.cs
-        cd temp_build
-        dotnet build -c Release
-        cp bin/Release/*/AimAssistProject.dll ../AimAssistAssembly.dll
-        cd ..
-
-    - name: Clean and Pack Bytes File
-      run: |
-        python scripts/clean_pack.py
+        python scripts/patch_bytes.py
 
     - name: Upload Final Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: AimAssist-Clean-Mod
-        path: output/Assembly-CSharp-clean.bytes
+        name: Patched-Menu-Bytes
+        path: output/Assembly-CSharp-patch.bytes
