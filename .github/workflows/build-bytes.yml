@@ -30,14 +30,14 @@ jobs:
     - name: Compile AimAssist to DLL
       run: |
         dotnet new classlib -n AimAssistProject -o temp_build
-        cp nguồn/AimAssist.cs temp_build/Class1.cs
+        cp src/AimAssist.cs temp_build/Class1.cs
         cd temp_build
         dotnet build -c Release
         cp bin/Release/net7.0/AimAssistProject.dll ../AimAssistAssembly.dll
 
     - name: Merge DLLs
       run: |
-        python kịch bản/merge_dll.py
+        python scripts/merge_dll.py          
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
