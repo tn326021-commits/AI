@@ -12,11 +12,9 @@ def generate_and_encrypt():
     source_path = os.path.join(asset_dir, "AimLock.asset")
     output_path = os.path.join(output_dir, "Aimlock.asset")
 
-    # Đảm bảo thư mục tồn tại trên môi trường Linux của GitHub Actions
     os.makedirs(asset_dir, exist_ok=True)
     os.makedirs(output_dir, exist_ok=True)
 
-    # Nội dung YAML chuẩn mở rộng cho AimLockHead
     yaml_content = """%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000
@@ -43,23 +41,19 @@ MonoBehaviour:
   prioritizeCenterScreen: 1
 """
 
-    # Ghi file YAML cấu hình
     with open(source_path, "w", encoding="utf-8") as f:
         f.write(yaml_content)
-    print(f"[+] Đã tạo file YAML tại: {source_path}")
 
-    # Đọc dữ liệu và mã hóa AES-256
     with open(source_path, "rb") as f:
         plain_data = f.read()
 
     cipher = AES.new(AES_KEY, AES.MODE_CBC, AES_IV)
     encrypted_data = cipher.encrypt(pad(plain_data, AES.block_size))
 
-    # Ghi file đã mã hóa
     with open(output_path, "wb") as f:
         f.write(encrypted_data)
     
-    print(f"[+] Đã mã hóa thành công file tại: {output_path}")
+    print(f"[+] Đã tạo và mã hóa thành công file tại: {output_path}")
 
 if __name__ == "__main__":
     generate_and_encrypt()
