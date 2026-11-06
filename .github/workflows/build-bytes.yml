@@ -28,7 +28,8 @@ jobs:
 
       # 4. Chạy script Python để tạo file asset và mã hóa AES-256
       - name: Run Encryption Script
-        run: python encrypt_asset.py
+        run: python scripts/encrypt_asset.py
+
 
       # 5. Lưu trữ artifact kết quả sau khi mã hóa
       - name: Upload Encrypted Asset Artifact
